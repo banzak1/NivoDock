@@ -1,0 +1,57 @@
+NivoDock — primeiros passos
+==========================
+
+Windows x64. Este pacote completo inclui o runtime do aplicativo.
+Nao e necessario instalar Node, NPM ou Python.
+
+1. Extraia todos os arquivos em uma pasta com permissao de escrita.
+2. Abra NivoDock.exe para usar diretamente.
+3. Para instalar e criar atalhos, abra Instalar-NivoDock.exe.
+4. Aguarde a busca dos jogos suportados e o carregamento das capas.
+
+Em Gerenciar voce encontra:
+- Adicionar jogo;
+- Emuladores e pastas;
+- Atualizar capas;
+- Verificar instalacoes;
+- Iniciar com Windows.
+
+Cada PC comeca com sua propria biblioteca. Este pacote nao inclui jogos,
+ROMs, saves ou configuracoes pessoais. Jogos ausentes ficam no Historico.
+
+Internet e necessaria para baixar capas novas. Capas ja guardadas e a
+biblioteca local podem ser usadas offline.
+
+CARDS DE PROGRESSO
+Os cards mostram dados locais de personagem, equipe, habilidades, itens ou
+campanha quando existe um leitor compativel. Gerenciar > Compatibilidade
+dos cards lista o suporte real. Use a selecao de perfil/arquivo no card e
+Escolher save para locais diferentes. Usar mais recente volta ao automatico.
+
+Nem todo jogo tem um formato que esta versao consegue interpretar. Nessas
+situacoes mostramos o limite e os registros do launcher, sem inventar
+niveis ou progresso. Dados refletem o save em disco; o leitor nao edita
+nem envia seus saves. Copiar arquivo e apenas uma copia daquele arquivo,
+nao necessariamente um backup completo de um jogo com multiplos arquivos.
+
+Versao de teste. Para relatar um problema, informe a versao do NivoDock,
+a versao do Windows, o jogo e o que aconteceu. Nao envie senhas ou saves
+pessoais sem necessidade.
+
+Dados criados durante o uso: games.json, config.json, .deck-profile/,
+backups/ e public/artwork/, ao lado do aplicativo. Preserve esses dados
+ao atualizar. A pasta padrao de instalacao e %LOCALAPPDATA%\NivoDock.
+
+O runtime inclui sua licenca em NODE-LICENSE.txt.
+
+ATUALIZACOES DO NIVODOCK
+Gerenciar > Atualizacoes do NivoDock permite consultar e confirmar a
+instalacao. O aplicativo mostra novidades e progresso e reinicia ao terminar.
+A biblioteca e suas configuracoes sao preservadas. Uma sessao acompanhada
+pelo NivoDock adia a instalacao. Em caso de falha de inicializacao, o
+atualizador tenta restaurar a versao anterior.
+
+Nesta distribuicao de teste, o canal online ainda nao foi publicado.
+Quando o responsavel disponibilizar o pacote com o canal configurado,
+instale-o manualmente uma vez para receber as atualizacoes futuras.
+Nao apague a pasta .updates durante uma instalacao ou recuperacao.

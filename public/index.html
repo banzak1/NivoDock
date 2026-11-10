@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NivoDock</title>
+  <meta name="application-name" content="NivoDock">
+  <meta name="theme-color" content="#101113">
+  <link rel="icon" type="image/svg+xml" href="/brand/icon.svg">
+  <link rel="alternate icon" href="/brand/nivodock.ico">
+  <link rel="apple-touch-icon" href="/brand/icon-512.png">
+  <style>
+    :root {
+      --bg-dark: #101113;
+      --card-bg: rgba(28,28,31,0.78);
+      --glass: rgba(32,32,35,0.75);
+      --glass-border: rgba(255,255,255,0.14);
+      --accent: #9c90ff;
+      --action: #6957db;
+      --text-main: #f5f5f5;
+      --text-muted: #a1a1aa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    #backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-size: cover;
+      background-position: center top;
+      transition: background-image 0.45s ease-in-out;
+      filter: brightness(0.30) saturate(0.55) blur(14px);
+      transform: scale(1.06);
+    }
+
+    #backdrop-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(circle at 78% 20%, rgba(105,87,219,0.08), transparent 52%),
+        linear-gradient(180deg, rgba(16,17,19,0.35) 0%, rgba(16,17,19,0.82) 55%, rgba(16,17,19,0.98) 100%);
+      pointer-events: none;
+    }
+
+    header {
+      position: relative;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      padding: 22px 38px 0;
+      background: linear-gradient(180deg, rgba(16,17,19,0.95), rgba(16,17,19,0.5));
+      gap: 18px;
+    }
+    .header-main, .header-actions, .header-navigation {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+    .header-main, .header-navigation { justify-content: space-between; }
+    .header-navigation { border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .header-actions { margin-left: auto; gap: 18px; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-weight: 750;
+      font-size: 1.2rem;
+      letter-spacing: -0.4px;
+      white-space: nowrap;
+    }
+    .brand-logo { width: 38px; height: 38px; flex-shrink: 0; }
+    .app-version { color: #93939f; font-size: 0.66rem; font-weight: 500; letter-spacing: 0; margin-left: 2px; }
+    .tabs { display: flex; align-items: center; gap: 22px; }
+    .tab-hint { font-size: 0.6rem; color: #93939f; border: 1px solid rgba(255,255,255,0.12); padding: 2px 4px; border-radius: 4px; }
+    .tab {
+      appearance: none;
+      font-family: inherit;
+      padding: 12px 0 15px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .tab:hover { color: #f5f5f5; }
+    .tab.active { color: #f5f5f5; border-bottom-color: var(--accent); }
+    .search-field { display: flex; align-items: center; gap: 9px; color: #a1a1aa; }
+    .search-field svg { width: 16px; height: 16px; flex-shrink: 0; }
+    #quick-search { width: 190px; padding: 9px 0; border: 0; border-radius: 0; background: transparent; font-size: 0.82rem; }
+    #quick-search::placeholder { color: #93939f; }
+    .library-tools { position: relative; }
+    .library-tools summary {
+      list-style: none; display: flex; align-items: center; gap: 8px;
+      padding: 9px 11px; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px;
+      color: #d4d4d8; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    }
+    .library-tools summary::-webkit-details-marker { display: none; }
+    .library-tools summary:hover, .library-tools[open] summary { background: rgba(255,255,255,0.06); color: #fff; }
+    .ui-icon { width: 17px; height: 17px; display: inline-block; vertical-align: middle; flex-shrink: 0; pointer-events: none; }
+    .tool-menu {
+      position: absolute; right: 0; top: calc(100% + 10px); width: 250px; padding: 7px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #202023;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.45);
+    }
+    .top-btn {
+      background: transparent; border: 1px solid rgba(255,255,255,0.12); color: #d4d4d8;
+      padding: 7px 10px; border-radius: 8px; font: 600 0.78rem 'Segoe UI',system-ui,sans-serif;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    }
+    .top-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .top-btn.active { color: var(--accent); }
+    .tool-menu .top-btn { display: flex; width: 100%; padding: 11px 12px; border: 0; text-align: left; }
+    .controller-pill { display: flex; align-items: center; gap: 7px; font-size: 0.73rem; color: var(--text-muted); white-space: nowrap; }
+    #controller-text { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+    .controller-pill.connected { color: #d4d4d8; }
+    .library-status { font-size: 0.7rem; color: #93939f; text-align: right; }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #85858f;
+    }
+
+    .controller-pill.connected .dot {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(156,144,255,0.25);
+    }
+
+    .clock {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: #e4e4e7;
+    }
+
+    main {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 38px 18px 38px;
+      overflow: hidden;
+    }
+
+    .hero-section {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: auto;
+      margin-bottom: 20px;
+      gap: 28px;
+    }
+
+    .hero-info {
+      max-width: 640px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    /* Pokémon Save Inspector Card (Trainer + 6 Party Pokémon) */
+    .pokemon-trainer-card {
+      background: linear-gradient(145deg, rgba(32,32,35,0.88), rgba(20,20,22,0.94));
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 20px;
+      padding: 18px 22px;
+      min-width: 440px;
+      max-width: 540px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.25);
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .pokemon-trainer-card.visible {
+      display: flex;
+    }
+
+    .trainer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 12px;
+      gap: 14px;
+    }
+
+    .trainer-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .trainer-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: radial-gradient(circle, rgba(244,244,245,0.35), rgba(32,32,35,0.9));
+      border: 1px solid rgba(244,244,245,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .trainer-avatar img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    .trainer-meta h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .trainer-id-pill {
+      font-size: 0.7rem;
+      background: rgba(244,244,245,0.22);
+      color: #d4d4d8;
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid rgba(244,244,245,0.4);
+    }
+
+    .trainer-sub {
+      font-size: 0.78rem;
+      color: #a1a1aa;
+      margin-top: 2px;
+    }
+
+    .save-selector {
+      background: #141416;
+      color: #e4e4e7;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      max-width: 190px;
+      cursor: pointer;
+    }
+
+    .party-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .universal .party-grid { gap: 16px 12px; }
+    .universal .poke-slot { background: transparent; border: 0; border-left: 1px solid rgba(255,255,255,0.12); border-radius: 0; padding: 2px 10px; }
+    .universal .poke-slot:hover { transform: none; }
+    .universal .poke-sprite-wrap, .universal .hp-bar-bg { display: none; }
+    .universal .poke-name { white-space: normal; font-weight: 600; margin-bottom: 4px; }
+    .universal .custom-sub { white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+    .custom-sub { color: var(--text-muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .universal .trainer-avatar { background: transparent; border: 0; width: 38px; }
+    .universal .trainer-avatar img { width: 32px; height: 32px; image-rendering: auto; }
+
+    .poke-slot {
+      min-width: 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: transform 0.2s;
+    }
+
+    .poke-slot:hover {
+      transform: translateY(-2px);
+      border-color: rgba(244,244,245,0.5);
+      background: rgba(244,244,245,0.1);
+    }
+
+    .poke-slot.empty {
+      opacity: 0.35;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: #85858f;
+      min-height: 54px;
+    }
+
+    .poke-sprite-wrap {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .poke-sprite-wrap img {
+      max-width: 40px;
+      max-height: 40px;
+      image-rendering: pixelated;
+    }
+
+    .poke-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .poke-name {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #f5f5f5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .poke-lv {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #d4d4d8;
+    }
+
+    .hp-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 99px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+
+    .hp-bar-fill {
+      height: 100%;
+      background: #f4f4f5;
+      border-radius: 99px;
+    }
+
+    .badges-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 13px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.16);
+      color: #d4d4d8;
+    }
+
+    .health-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: transparent;
+      border: 1px solid transparent;
+      color: #b7b7c1;
+    }
+
+    .health-badge.missing {
+      background: rgba(239,68,68,0.22);
+      border-color: rgba(239,68,68,0.5);
+      color: #fecaca;
+    }
+
+    .hero-title {
+      font-size: 2.65rem;
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -0.8px;
+      margin-bottom: 8px;
+      text-shadow: 0 6px 24px rgba(0,0,0,0.75);
+    }
+
+    .hero-subtitle {
+      font-size: 1rem;
+      color: #d4d4d8;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .tag-chip {
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e4e4e7;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-play {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 28px;
+      border-radius: 14px;
+      border: none;
+      background: var(--action);
+      color: #fff;
+      font-size: 1.02rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+    }
+
+    .btn-play:hover {
+      transform: translateY(-2px) scale(1.02);
+      filter: brightness(1.1);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.07);
+    }
+
+    .gamepad-btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.28);
+      color: inherit;
+      font-size: 0.74rem;
+      font-weight: 900;
+    }
+
+    .shelf-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .shelf-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .games-track {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      overflow-x: auto;
+      padding: 14px 8px 18px 8px;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+    }
+
+    .games-track::-webkit-scrollbar { display: none; }
+
+    .game-card {
+      position: relative;
+      flex: 0 0 175px;
+      height: 250px;
+      border-radius: 16px;
+      background: var(--card-bg);
+      border: 2px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.24s cubic-bezier(0.2, 0.9, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+    }
+
+    .game-card img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+      transition: transform 0.35s ease;
+    }
+
+    .game-card .fallback-cover {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 1.05rem;
+      z-index: 0;
+      background: linear-gradient(135deg, #303034, #202023);
+    }
+
+    .game-card img.wide-cover { object-fit: contain; background: #202023; }
+    button:disabled { opacity: 0.55; cursor: wait; }
+
+    .game-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(180deg, rgba(0,0,0,0.05) 40%, rgba(16,17,19,0.94) 100%);
+    }
+
+    .game-card.selected {
+      flex: 0 0 200px;
+      height: 280px;
+      border-color: var(--accent);
+      transform: translateY(-8px);
+      box-shadow:
+        0 18px 40px rgba(0,0,0,0.75),
+        0 0 0 1px var(--accent),
+        0 0 28px rgba(105,87,219,0.18);
+    }
+
+    .game-card.selected img { transform: scale(1.06); }
+
+    .card-top-badges {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-plat {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(20,20,22,0.85);
+      border: 1px solid rgba(255,255,255,0.15);
+      text-transform: uppercase;
+    }
+
+    .card-content {
+      position: relative;
+      z-index: 3;
+      padding: 12px 14px;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #fff;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    footer {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 38px;
+      background: rgba(16,17,19,0.9);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(16px);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .prompts {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .prompt-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .key-badge {
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.14);
+      color: #f5f5f5;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(12,12,14,0.85);
+      backdrop-filter: blur(16px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-backdrop.open { display: flex; }
+    #modal-update [hidden] { display: none !important; }
+
+    .modal-box {
+      width: 100%;
+      max-width: 720px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: #202023;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .modal-header h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .close-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #d4d4d8;
+      margin-bottom: 5px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px 13px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: #141416;
+      color: #f5f5f5;
+      font-size: 0.9rem;
+    }
+
+    .browse-btn {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(244,244,245,0.4);
+      background: rgba(244,244,245,0.15);
+      color: #f4f4f5;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .emu-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .emu-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+
+    #launch-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(16,17,19,0.92);
+      backdrop-filter: blur(20px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+
+    #launch-overlay.show { display: flex; }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 5px solid rgba(255,255,255,0.12);
+      border-top-color: var(--accent);
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-height: 800px) {
+      header { padding: 12px 24px 0; gap: 8px; }
+      main { padding: 8px 24px 12px; overflow-y: auto; }
+      .hero-section { margin-top: 0; margin-bottom: 12px; flex-shrink: 0; }
+      .shelf-section { flex-shrink: 0; }
+      .game-card { width: 160px; height: 230px; }
+      .hero-title { font-size: 2.2rem; }
+      .pokemon-trainer-card { padding: 12px 16px; }
+      footer { padding: 8px 24px; flex-shrink: 0; }
+    }
+
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
+    @media (max-width: 1100px) {
+      .header-actions { gap: 12px; }
+      .controller-pill { display: none; }
+      .tabs { gap: 15px; }
+      .library-status { max-width: 185px; }
+      #quick-search { width: 150px; }
+    }
+    @media (max-width: 760px) {
+      header { padding: 16px 20px 0; }
+      .header-main { flex-wrap: wrap; gap: 12px; }
+      .header-actions { width: 100%; justify-content: space-between; margin: 0; }
+      .header-navigation { flex-wrap: wrap; gap: 0; }
+      .tabs { width: 100%; overflow-x: auto; }
+      .library-status { max-width: none; padding: 8px 0; }
+      .clock { margin-left: auto; }
+      .tool-menu { right: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+    main { overflow-y:auto; }
+    .pokemon-trainer-card { flex:0 1 550px; width:46vw; min-width:390px; max-width:550px; max-height:max(285px,calc(100vh - 550px)); gap:10px; }
+    .pokemon-trainer-card:not(.universal) { max-height:none; }
+    #pokemon-save-card [hidden] { display:none !important; }
+    .trainer-header { flex-wrap:wrap; gap:8px; flex-shrink:0; }
+    .trainer-meta { min-width:0; }
+    .trainer-meta h3 { overflow-wrap:anywhere; }
+    #progress-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; padding-right:5px; }
+    .progress-controls { display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
+    .progress-controls .save-selector { max-width:100%; flex:1 1 180px; min-width:0; }
+    .progress-controls .top-btn { font-size:.72rem; padding:6px 8px; }
+    .progress-tabs { position:sticky; top:0; z-index:1; background:#1d1d20; padding-bottom:6px; display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+    .progress-tab { border:1px solid #ffffff18; border-radius:7px; padding:6px 8px; background:transparent; color:#b6b6c0; font-size:.72rem; cursor:pointer; }
+    .progress-tab[aria-pressed="true"] { color:#ded8ff; border-color:#9c90ff80; background:#6957db25; }
+    .progress-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:13px 16px; margin:0; }
+    .progress-metric dt { color:#aaaab5; font-size:.73rem; line-height:1.3; }
+    .progress-metric dd { margin:4px 0 0; font-size:1rem; font-weight:650; color:#f4f4f5; overflow-wrap:anywhere; }
+    .progress-explanation,.progress-subtitle { color:#d1cedd; font-size:.8rem; line-height:1.5; margin-bottom:14px; }
+    .progress-note,.progress-source { color:#aaaab5; font-size:.71rem; line-height:1.45; margin-top:10px; }
+    .progress-source { margin:0; padding-top:7px; border-top:1px solid #ffffff10; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+    .progress-heading { font-size:.76rem; color:#b8b4cb; margin:16px 0 7px; font-weight:600; }
+    .progress-skill { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:8px 0; border-bottom:1px solid #ffffff0c; font-size:.8rem; }
+    .progress-skill strong { color:#c9c0f5; white-space:nowrap; }
+    .progress-skill small { display:block; color:#aaaab5; font-size:.7rem; margin-top:3px; }
+    .progress-equipment { display:flex; flex-direction:column; gap:4px; padding:10px 0; border-bottom:1px solid #ffffff10; font-size:.82rem; }
+    .progress-equipment small { color:#aaaab5; font-size:.7rem; }
+    .progress-equipment .progress-note { margin:0; }
+    .progress-equipment progress,.progress-xp progress { display:block; width:100%; height:6px; margin-top:5px; accent-color:#9c90ff; }
+    .progress-xp { margin-top:15px; color:#d2cbea; font-size:.76rem; }
+    .progress-xp small { display:block; margin-top:5px; color:#aaaab5; }
+    .progress-objective { margin-top:15px; font-size:.8rem; line-height:1.5; }
+    .progress-objective small { color:#aaaab5; }
+    .progress-limitations { padding-left:17px; color:#bdbbc9; font-size:.78rem; line-height:1.6; }
+    .progress-support-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+    .progress-support-table th { text-align:left; color:#b5afd2; }
+    .progress-support-table th,.progress-support-table td { padding:11px 10px; border-bottom:1px solid #ffffff14; vertical-align:top; }
+    .progress-support-table td:first-child { min-width:170px; }
+    @media(max-width:1050px) { main { overflow-y:auto; } .hero-section { flex-wrap:wrap; margin-top:0; } .hero-info { flex-basis:100%; max-width:100%; } .pokemon-trainer-card { width:100%; flex-basis:100%; max-width:100%; min-width:0; } }
+
+</style>
+</head>
+<body>
+
+  <div id="backdrop"></div>
+  <div id="backdrop-overlay"></div>
+
+  <header>
+    <div class="header-main">
+      <div class="brand" title="NivoDock — Seus jogos. Um só lugar.">
+        <img class="brand-logo" src="/brand/icon.svg" alt="" width="38" height="38">
+        <span>NivoDock</span><span class="app-version" id="app-version">v2.0.0</span>
+      </div>
+      <div class="header-actions">
+        <label class="search-field"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input type="text" id="quick-search" placeholder="Buscar na biblioteca" aria-label="Buscar jogos" autocomplete="off"></label>
+        <details class="library-tools" id="library-tools">
+          <summary><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="#101113"/><circle cx="15" cy="17" r="2" fill="#101113"/></svg> Gerenciar <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary>
+          <div class="tool-menu" aria-label="Gerenciar biblioteca">
+            <button class="top-btn" id="btn-open-add">Adicionar jogo</button>
+            <button class="top-btn" id="btn-open-emus">Emuladores e pastas</button>
+            <button class="top-btn" id="btn-refresh-covers">Atualizar capas</button>
+            <button class="top-btn" id="btn-scan">Verificar instalações</button>
+            <button class="top-btn" id="btn-updates">Atualizações do NivoDock</button>
+            <button class="top-btn" id="btn-progress-support">Compatibilidade dos cards</button>
+            <button class="top-btn" id="autostart-btn" aria-pressed="false">Iniciar com Windows</button>
+          </div>
+        </details>
+        <div class="controller-pill" id="controller-status"><span class="dot"></span><span id="controller-text">Controle desconectado</span></div>
+        <div class="clock" id="clock">00:00</div>
+      </div>
+    </div>
+    <div class="header-navigation">
+      <nav class="tabs" id="category-tabs" aria-label="Bibliotecas">
+        <span class="tab-hint" aria-hidden="true">LB</span><button type="button" class="tab active" data-cat="all" aria-pressed="true">Todos</button>
+<button type="button" class="tab" data-cat="favorites" aria-pressed="false">Favoritos</button>
+<button type="button" class="tab" data-cat="switch" aria-pressed="false">Switch</button>
+<button type="button" class="tab" data-cat="pc" aria-pressed="false">PC</button>
+<button type="button" class="tab" data-cat="steam" aria-pressed="false">Steam</button>
+<button type="button" class="tab" data-cat="retro" aria-pressed="false">Retrô</button>
+<button type="button" class="tab" data-cat="history" aria-pressed="false">Histórico</button><span class="tab-hint" aria-hidden="true">RB</span>
+      </nav>
+      <span id="library-status" class="library-status" role="status" aria-live="polite">Verificando instalações...</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-section">
+      <div class="hero-info">
+        <div class="badges-line">
+          <div class="platform-badge" id="hero-platform">NINTENDO SWITCH</div>
+          <div class="health-badge" id="hero-health">✓ Pronto para jogar</div>
+        </div>
+        <h1 class="hero-title" id="hero-title">Carregando biblioteca...</h1>
+        <p class="hero-subtitle" id="hero-subtitle">Selecione um jogo abaixo</p>
+        <div class="tags-row" id="hero-tags"></div>
+
+        <div class="hero-actions">
+          <button class="btn-play" id="btn-play">
+            <span class="gamepad-btn-icon">A</span>
+            <span id="btn-play-text">JOGAR AGORA</span>
+          </button>
+
+          <button class="btn-secondary" id="btn-emulator" style="display: none;">
+            <span class="gamepad-btn-icon">X</span>
+            <span id="btn-emulator-label">Emulador: Eden</span>
+          </button>
+
+          <button class="btn-secondary" id="btn-fav">
+            <span class="gamepad-btn-icon">Y</span>
+            <span id="btn-fav-label">Favoritar</span>
+          </button>
+
+          <button class="btn-secondary" id="btn-edit-game" title="Editar caminho, save ou capa deste jogo">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/></svg><span>Editar</span>
+          </button>
+
+          <button class="btn-secondary" id="btn-cover-game" title="Buscar novamente a capa deste jogo"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 16 5-5 5 5 3-3 5 5"/><circle cx="15" cy="8" r="1"/></svg><span>Capa</span></button>
+          <button class="btn-secondary" id="btn-delete" title="Remover da biblioteca" aria-label="Remover da biblioteca">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Universal Save & Trainer Inspector Widget -->
+      <div class="pokemon-trainer-card" id="pokemon-save-card">
+        <div class="trainer-header">
+          <div class="trainer-left">
+            <div class="trainer-avatar">
+              <img src="https://play.pokemonshowdown.com/sprites/trainers/red-gen3.png" alt="Trainer">
+            </div>
+            <div class="trainer-meta">
+              <h3>
+                <span id="pk-trainer-name">Personagem</span>
+                <span class="trainer-id-pill" id="pk-trainer-id">Save</span>
+              </h3>
+              <div class="trainer-sub" id="pk-save-meta">Save detectado • Equipe ativa</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <select class="save-selector" id="pk-save-select" title="Trocar arquivo de Save inspecionado"></select>
+            <button class="top-btn" id="btn-backup-save" style="display:none; padding:5px 9px; font-size:0.74rem; border-color:rgba(244,244,245,0.45); color:#e4e4e7;" title="Criar Backup datado deste Save no Cofre (backups/)">Copiar arquivo</button>
+            <button class="top-btn" id="btn-sync-save" style="display:none; padding:5px 9px; font-size:0.74rem; border-color:rgba(244,244,245,0.45); color:#e4e4e7;" title="Sincronizar (copiar) este Save ativo para o outro destino (Switch ⇄ PC Port)">⇄ Sync</button>
+            <button class="top-btn" id="btn-refresh-save" style="padding:5px 9px; font-size:0.74rem;" title="Recarregar Save do disco agora">Atualizar</button>
+          </div>
+        </div>
+        <div class="progress-controls">
+          <select class="save-selector" id="progress-profile-select" aria-label="Personagem, perfil ou arquivo de save" hidden></select>
+          <button class="top-btn" id="btn-choose-progress-save" hidden>Escolher save</button>
+          <button class="top-btn" id="btn-progress-auto" hidden>Usar mais recente</button>
+        </div>
+        <p id="progress-feedback" class="progress-note" role="status" hidden></p>
+        <div id="progress-body"><div class="party-grid" id="pk-party-grid"></div><div id="progress-game-content"></div></div>
+        <p id="progress-source" class="progress-source"></p>
+      </div>
+    </section>
+
+    <section class="shelf-section">
+      <div class="shelf-header">
+        <span id="shelf-title">TODOS OS JOGOS</span>
+        <span id="shelf-counter">0 jogos</span>
+      </div>
+      <div class="games-track" id="games-track"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="prompts">
+      <div class="prompt-item"><span class="key-badge">D-PAD / Analógico</span> Selecionar</div>
+      <div class="prompt-item"><span class="key-badge">A / Enter</span> Iniciar Direto</div>
+      <div class="prompt-item"><span class="key-badge">X / Espaço</span> Trocar Emulador</div>
+      <div class="prompt-item"><span class="key-badge">Y / F</span> Favorito</div>
+      <div class="prompt-item"><span class="key-badge">LB / RB</span> Abas</div>
+    </div>
+    <div>Standalone Universal • Qualquer usuário pode adicionar seus jogos, emuladores e saves</div>
+  </footer>
+
+  <!-- Modal: Adicionar ou Editar Jogo -->
+  <div class="modal-backdrop" id="modal-add">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal-add-title">➕ Adicionar / Editar Jogo</h2>
+        <button class="close-btn" id="close-add">✕</button>
+      </div>
+
+      <input type="hidden" id="edit-game-id">
+
+      <div class="form-group">
+        <label>Tipo de Jogo</label>
+        <select id="add-type">
+          <option value="emulator">Jogo de Emulador (Switch, GBA, PS2, etc. — Abre direto na ROM)</option>
+          <option value="pc">Jogo Nativo de PC (.exe ou .bat)</option>
+          <option value="steam" disabled>Jogo Steam (detectado automaticamente)</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="add-emu-group">
+        <label>Emulador</label>
+        <select id="add-emulator"></select>
+      </div>
+
+      <div class="form-group">
+        <label id="add-path-label">Arquivo do Jogo (ROM .nsp, .xci, .gba, .iso ou .exe)</label>
+        <div class="input-row">
+          <input type="text" id="add-path" placeholder="Clique em Procurar para escolher no Windows...">
+          <button class="browse-btn" id="btn-browse-game">📂 Procurar...</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Arquivo de Save Opcional (.sav / .sgm — Para exibir Treinador e Equipe Pokémon)</label>
+        <div class="input-row">
+          <input type="text" id="add-save-path" placeholder="Automático (ou escolha um arquivo .sav / .sgm específico)">
+          <button class="browse-btn" id="btn-browse-save">💾 Procurar Save...</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nome do Jogo (A capa oficial é buscada automaticamente pelo nome!)</label>
+        <input type="text" id="add-title" placeholder="Ex: Pokémon FireRed">
+      </div>
+
+      <div class="form-group">
+        <label>URL da Capa (Deixe em branco para busca automática)</label>
+        <input type="text" id="add-cover" placeholder="https://...">
+        <label style="display:flex;gap:8px;align-items:center;margin-top:10px">
+          <input type="checkbox" id="add-cover-locked" style="width:auto">
+          Preservar esta capa nas atualizações automáticas
+        </label>
+        <small>Deixe a URL em branco para buscar novamente pelo nome do jogo.</small>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" id="cancel-add">Cancelar</button>
+        <button class="btn-play" id="confirm-add" style="padding: 12px 24px; font-size: 0.95rem;">Salvar na Biblioteca</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configurar / Cadastrar Emuladores -->
+  <div class="modal-backdrop" id="modal-emus">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>⚙️ Gerenciar Emuladores (Universal)</h2>
+        <button class="close-btn" id="close-emus">✕</button>
+      </div>
+      <p style="color: #a1a1aa; font-size: 0.86rem; margin-bottom: 14px;">
+        Qualquer usuário pode apontar onde estão seus emuladores instalados ou cadastrar um novo emulador abaixo:
+      </p>
+
+      <div id="emus-list"></div>
+
+      <div class="form-group" style="margin-top:16px">
+        <label>Outras pastas de jogos (as lojas e os locais comuns já são consultados)</label>
+        <div id="discovery-roots" style="font-size:0.8rem;color:#a1a1aa;overflow-wrap:anywhere"></div>
+        <button class="browse-btn" id="btn-add-location" style="margin-top:8px">📂 Adicionar local de jogos</button>
+      </div>
+
+      <div class="emu-card" style="border-color: rgba(244,244,245,0.4); background: rgba(244,244,245,0.06);">
+        <div class="emu-card-header">
+          <span>➕ Cadastrar Novo Emulador Personalizado</span>
+        </div>
+        <div class="input-row" style="margin-bottom: 8px;">
+          <input type="text" id="new-emu-name" placeholder="Nome (Ex: Citra 3DS, Dolphin, Cemu)">
+          <input type="text" id="new-emu-plat" placeholder="Plataforma (Ex: Nintendo 3DS)">
+          <select id="new-emu-cat" style="max-width: 150px;">
+            <option value="switch">Aba Switch</option>
+            <option value="retro">Aba Retrô</option>
+          </select>
+        </div>
+        <div class="input-row" style="margin-bottom: 8px;">
+          <input type="text" id="new-emu-exe" placeholder="Caminho do .exe do Emulador">
+          <button class="browse-btn" id="btn-browse-new-emu">📂 Procurar .exe</button>
+        </div>
+        <div class="input-row">
+          <input type="text" id="new-emu-args" placeholder="Argumentos (Ex: -f -g {rom})" value="{rom}">
+          <input type="text" id="new-emu-romdir" placeholder="Pasta de ROMs (Opcional)">
+          <button class="browse-btn" id="btn-add-new-emu" style="border-color:#d4d4d8; color:#e4e4e7;">➕ Adicionar Emulador</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-play" id="close-emus-done" style="padding: 12px 24px; font-size: 0.95rem;">Concluído</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-progress-support" role="dialog" aria-modal="true" aria-labelledby="progress-support-title">
+    <div class="modal-box" style="max-width:1000px">
+      <div class="modal-header"><h2 id="progress-support-title">Cards de progresso</h2><button class="close-btn" id="close-progress-support" aria-label="Fechar compatibilidade">×</button></div>
+      <p class="progress-note">A profundidade depende do jogo e do save encontrado. A leitura é local; nenhum save é enviado pela aplicação.</p>
+      <input id="progress-support-search" class="save-selector" style="max-width:100%;width:100%;margin:14px 0" placeholder="Buscar um jogo" aria-label="Filtrar compatibilidade por jogo">
+      <p id="progress-support-error" role="status"></p>
+      <div style="overflow:auto"><table class="progress-support-table"><thead><tr><th>Jogo</th><th>Leitura atual</th><th>Dados interpretados ou limite</th></tr></thead><tbody id="progress-support-rows"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-update" role="dialog" aria-modal="true" aria-labelledby="update-title" aria-describedby="update-message" tabindex="-1">
+    <div class="modal-box" style="max-width:560px">
+      <div class="modal-header"><h2 id="update-title">Atualizações do NivoDock</h2><button class="close-btn" id="close-update" aria-label="Fechar atualizações">×</button></div>
+      <p id="update-versions" style="color:#b5b5bd;margin-bottom:16px"></p>
+      <p id="update-message" role="status" aria-live="polite">Conferindo atualizações…</p>
+      <ul id="update-notes" style="padding-left:20px;margin-top:16px;line-height:1.6" hidden></ul>
+      <progress id="update-progress" max="100" value="0" aria-label="Download da atualização" style="width:100%;margin-top:18px;accent-color:#9c90ff" hidden></progress>
+      <p style="color:#b5b5bd;margin-top:18px;font-size:.85rem">Sua biblioteca e suas configurações serão preservadas. O NivoDock reinicia após a instalação.</p>
+      <div class="modal-actions" style="flex-wrap:wrap">
+        <button class="top-btn" id="update-check">Verificar agora</button>
+        <a class="top-btn" id="update-manual" target="_blank" rel="noopener noreferrer" hidden>Baixar pacote manual</a>
+        <button class="top-btn" id="update-later">Depois</button>
+        <button class="btn-play" id="update-install" style="padding:12px 18px;font-size:.95rem" hidden>Baixar e instalar</button>
+      </div>
+    </div>
+  </div>
+  <script src="/update-ui.js"></script>
+
+  <div id="launch-overlay">
+    <div class="spinner"></div>
+    <h2 id="launch-title" style="font-size: 1.9rem; font-weight: 800;">Iniciando jogo...</h2>
+    <p id="launch-sub" style="color: #a1a1aa; font-size: 1.05rem;">Abrindo direto em tela cheia</p>
+  </div>
+
+  <script>
+    let allGames = [];
+    let emulators = {};
+    let filteredGames = [];
+    let selectedIndex = 0;
+    let currentCategory = 'all';
+    let isLaunching = false;
+    let activeSession = null;
+
+    const categories = ['all', 'favorites', 'switch', 'pc', 'steam', 'retro', 'history'];
+    let scanState = {};
+    let lastLibraryRevision = '';
+    let discoveryRoots = [];
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        if (type === 'move') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(480, now + 0.045);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'tab') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(680, now + 0.07);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'launch') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.26);
+        }
+      } catch (e) {}
+    }
+
+    function updateClock() {
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    let lastSaveSignature = '';
+
+    async function loadData(keepSelection = false, flashSaveBadge = false) {
+      const prevId = filteredGames[selectedIndex]?.id;
+      const res = await fetch('/api/data');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Não foi possível carregar a biblioteca');
+      if (data.version) document.getElementById('app-version').textContent = `v${data.version}`;
+      scanState = data.scanStatus || {};
+      window.NivoDockUpdates.render(data.update);
+      lastLibraryRevision = data.libraryRevision || '';
+      discoveryRoots = data.discoveryRoots || [];
+      allGames = data.games || [];
+      renderDiscoveryStatus();
+      emulators = data.emulators || {};
+      activeSession = data.activeSession || null;
+      if (data.saveSignature) lastSaveSignature = data.saveSignature;
+      filterGames(currentCategory, keepSelection ? prevId : null);
+      checkAutostart();
+      if (flashSaveBadge) {
+        const metaEl = document.getElementById('pk-save-meta');
+        if (metaEl) {
+          const orig = metaEl.textContent;
+          metaEl.style.color = '#34d399';
+          metaEl.textContent = '✓ Save atualizado automaticamente! • ' + orig;
+          setTimeout(() => { metaEl.style.color = ''; }, 3500);
+        }
+      }
+    }
+
+    async function checkAutostart() {
+      try {
+        const res = await fetch('/api/autostart-status');
+        const data = await res.json();
+        const btn = document.getElementById('autostart-btn');
+        btn.classList.toggle('active', Boolean(data.enabled));
+        btn.textContent = data.enabled ? 'Iniciar com Windows: ligado' : 'Iniciar com Windows: desligado';
+        btn.setAttribute('aria-pressed', String(Boolean(data.enabled)));
+      } catch (e) {}
+    }
+
+    document.getElementById('autostart-btn').addEventListener('click', async () => {
+      await fetch('/api/autostart', { method: 'POST' });
+      checkAutostart();
+    });
+
+    function escapeHtml(value = '') {
+      return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function imageUrl(value = '') {
+      return /^(?:https?:\/\/|\/artwork\/[a-f0-9]{64}\.(?:jpg|png|webp)$)/i.test(value) ? value : '';
+    }
+    function searchText(value = '') {
+      return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    let searchQuery = '';
+
+    function renderDiscoveryStatus() {
+      const el = document.getElementById('library-status');
+      const installed = allGames.filter(g => g.installation?.status === 'installed').length;
+      const unavailable = allGames.length - installed;
+      el.textContent = scanState.running ? '⏳ Verificando instalações...' : scanState.error ? '⚠ Verificação pendente' : `${installed} instalados • ${unavailable} no histórico`;
+      if (scanState.coverPending) el.textContent += ` • ${scanState.coverPending} capas`;
+      el.title = scanState.error || (scanState.warnings?.length ? scanState.warnings.slice(0, 3).map(w => w.reason).join(' • ') : 'Jogos ausentes ficam no Histórico e mantêm seus favoritos, saves e tempo jogado.');
+      document.getElementById('btn-scan').disabled = Boolean(scanState.running);
+    }
+
+    function filterGames(category, preserveId = null) {
+      currentCategory = category;
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.cat === category);
+        t.setAttribute('aria-pressed', String(t.dataset.cat === category));
+      });
+
+      const available = allGames.filter(g => g.installation?.status === 'installed');
+      let baseList;
+      if (category === 'history') {
+        baseList = allGames.filter(g => g.installation?.status !== 'installed');
+      } else if (category === 'all') {
+        baseList = [...available].sort((a, b) => (b.favorite - a.favorite) || ((b.lastPlayed || 0) - (a.lastPlayed || 0)));
+      } else if (category === 'favorites') {
+        baseList = available.filter(g => g.favorite);
+      } else {
+        baseList = available.filter(g => g.category === category);
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchText(searchQuery.trim());
+        filteredGames = baseList.filter(g =>
+          searchText(g.title).includes(q) ||
+          searchText(g.platform).includes(q) ||
+          searchText(g.subtitle).includes(q) ||
+          (g.tags || []).some(t => searchText(t).includes(q))
+        );
+      } else {
+        filteredGames = baseList;
+      }
+
+      if (preserveId) {
+        const foundIdx = filteredGames.findIndex(g => g.id === preserveId);
+        selectedIndex = foundIdx >= 0 ? foundIdx : 0;
+      } else {
+        selectedIndex = 0;
+      }
+      renderShelf();
+      updateHero();
+    }
+
+    document.getElementById('quick-search').addEventListener('input', (e) => {
+      searchQuery = e.target.value || '';
+      filterGames(currentCategory, null);
+    });
+
+    function renderShelf() {
+      const track = document.getElementById('games-track');
+      track.innerHTML = '';
+
+      const catNames = {
+        all: 'JOGOS INSTALADOS',
+        favorites: '★ SEUS JOGOS FAVORITOS',
+        history: 'HISTÓRICO • AUSENTES, INCOMPLETOS E NÃO VERIFICADOS',
+        switch: 'NINTENDO SWITCH & SWITCH 2 (ABERTURA DIRETA)',
+        pc: 'JOGOS DE PC NATIVOS & RECOMP',
+        steam: 'BIBLIOTECA STEAM',
+        retro: 'CLÁSSICOS RETRÔ / GBA (COM LEITOR DE SAVE POKÉMON)'
+      };
+      document.getElementById('shelf-title').textContent = catNames[currentCategory] || 'JOGOS';
+      document.getElementById('shelf-counter').textContent = `${filteredGames.length} jogos`;
+
+      filteredGames.forEach((game, idx) => {
+        const card = document.createElement('div');
+        card.className = 'game-card' + (idx === selectedIndex ? ' selected' : '');
+        card.innerHTML = `
+          <div class="fallback-cover">${escapeHtml(game.title)}</div>
+          <div class="card-top-badges">
+            <span class="card-plat">${escapeHtml(game.platform)}</span>
+            <span>${game.favorite ? '⭐' : ''}</span>
+          </div>
+          <div class="card-content">
+            <div class="card-title">${escapeHtml(game.title)}</div>
+          </div>
+        `;
+        const cover = imageUrl(game.cover);
+        if (cover) {
+          const img = document.createElement('img');
+          img.alt = game.title;
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.addEventListener('load', () => img.classList.toggle('wide-cover', img.naturalWidth > img.naturalHeight));
+          let triedRemote = false;
+          img.addEventListener('error', () => {
+            const remote = imageUrl(game.artwork?.coverUrl);
+            if (!triedRemote && remote && remote !== cover) {
+              triedRemote = true;
+              img.src = remote;
+            } else img.style.display = 'none';
+          });
+          img.src = cover;
+          card.appendChild(img);
+        }
+        card.addEventListener('click', () => selectGame(idx));
+        card.addEventListener('dblclick', () => {
+          selectGame(idx);
+          triggerLaunch();
+        });
+        track.appendChild(card);
+      });
+    }
+
+    function selectGame(idx) {
+      if (filteredGames.length === 0) return;
+      selectedIndex = (idx + filteredGames.length) % filteredGames.length;
+      playSound('move');
+
+      const cards = document.querySelectorAll('.game-card');
+      cards.forEach((c, i) => c.classList.toggle('selected', i === selectedIndex));
+      if (cards[selectedIndex]) {
+        cards[selectedIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+      updateHero();
+    }
+
+    let progressCardSignature = '', progressCardGame = '', progressTab = 'summary';
+    const progressSupportModal = document.getElementById('modal-progress-support');
+    let supportRows = [];
+    function progressNode(tag, className, text) {
+      const node = document.createElement(tag); if (className) node.className = className;
+      if (text !== undefined) node.textContent = String(text); return node;
+    }
+    function progressValue(metric) {
+      if (metric.unit === 'seconds') { const minutes = Math.floor(Number(metric.value) / 60); return `${Math.floor(minutes / 60)}h ${minutes % 60}m`; }
+      if (metric.unit === 'date') return new Date(metric.value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+      const value = typeof metric.value === 'number' ? new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(metric.value) : String(metric.value ?? '—');
+      return value + (metric.unit ? ` ${metric.unit}` : '');
+    }
+    async function selectProgressSave(game, selection) {
+      const feedback = document.getElementById('progress-feedback'); feedback.hidden = false; feedback.textContent = 'Selecionando save…';
+      try {
+        const response = await fetch('/api/progress/select', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId: game.id, selection }) });
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Não foi possível selecionar o save.');
+        progressCardSignature = ''; await loadData(true, true);
+      } catch (err) { feedback.hidden = false; feedback.textContent = err.message; }
+    }
+    function renderProgressBody(panel, container) {
+      container.replaceChildren(); const skills = panel.skills || [], equipment = panel.equipment || [];
+      const available = [['summary', 'Resumo'], ...(skills.length ? [['skills', `${panel.skillsLabel||'Habilidades'} (${skills.length})`]] : []), ...(equipment.length ? [['equipment', `Equipamento (${equipment.length})`]] : []), ...((panel.limitations?.length || panel.details?.length) ? [['details', 'Sobre os dados']] : [])];
+      if (!available.some(([id]) => id === progressTab)) progressTab = 'summary';
+      const tabs = progressNode('div', 'progress-tabs'); tabs.setAttribute('role', 'group'); tabs.setAttribute('aria-label', 'Informações de progresso');
+      for (const [id,label] of available) {
+        const button = progressNode('button', 'progress-tab', label); button.type = 'button'; button.dataset.progressTab = id; button.setAttribute('aria-pressed', String(progressTab === id));
+        button.onclick = () => { progressTab = id; renderProgressBody(panel, container); container.querySelector(`[data-progress-tab="${id}"]`)?.focus(); };
+        tabs.append(button);
+      }
+      container.append(tabs);
+      const body = progressNode('div', 'progress-tab-body'); container.append(body);
+      const metrics = list => { const grid = progressNode('dl', 'progress-metrics'); for (const metric of list) { const entry = progressNode('div','progress-metric'); entry.append(progressNode('dt','',metric.label), progressNode('dd','',progressValue(metric))); grid.append(entry); } body.append(grid); };
+      if (progressTab === 'summary') {
+        if (panel.identity?.subtitle) body.append(progressNode('p', 'progress-subtitle', panel.identity.subtitle));
+        if (panel.support.status !== 'ready') body.append(progressNode('p', 'progress-explanation', panel.support.reason));
+        metrics((panel.metrics || []).slice(0,8));
+        if (panel.progress?.total > 0) {
+          const track = progressNode('div','progress-xp'); track.append(progressNode('span','',`${panel.progress.label}: ${progressValue({value:panel.progress.current})} / ${progressValue({value:panel.progress.total})} XP`));
+          const meter = progressNode('progress',''); meter.max = panel.progress.total; meter.value = Math.min(panel.progress.current, panel.progress.total); meter.setAttribute('aria-label',panel.progress.label); track.append(meter);
+          if (panel.progress.current >= panel.progress.total) track.append(progressNode('small','','Meta de XP atingida no save.')); body.append(track);
+        }
+        for (const objective of panel.objectives || []) { const item=progressNode('div','progress-objective'); item.append(progressNode('small','',objective.label),progressNode('p','',objective.text)); body.append(item); }
+        if (skills.length) {
+          body.append(progressNode('h4','progress-heading',panel.skillsPreviewLabel || 'Maiores XP por habilidade'));
+          for(const skill of skills.slice(0,2)){const row=progressNode('div','progress-skill');row.append(progressNode('span','',skill.name),progressNode('strong','',progressValue(skill)));body.append(row);}
+        }
+        if (panel.limitations?.[0]) body.append(progressNode('p','progress-note',panel.limitations[0]));
+      } else if (progressTab === 'skills') {
+        body.append(progressNode('p','progress-note','Valores lidos do save. XP não foi convertido em nível.'));
+        for (const skill of skills) {const row=progressNode('div','progress-skill');const label=progressNode('div','');label.append(progressNode('span','',skill.name));if(skill.detail)label.append(progressNode('small','',skill.detail));row.append(label,progressNode('strong','',progressValue(skill)));body.append(row);}
+      } else if (progressTab === 'equipment') {
+        for (const item of equipment) {
+          const row=progressNode('div','progress-equipment');row.append(progressNode('small','',item.slot||'Equipado'),progressNode('strong','',item.name));
+          if(typeof item.durability==='number'){
+            row.append(progressNode('span','progress-note','Durabilidade: '+progressValue({value:item.durability})+(item.maxDurability>0?' / '+progressValue({value:item.maxDurability}):'')));
+            if(item.maxDurability>0){const meter=progressNode('progress','');meter.max=item.maxDurability;meter.value=Math.max(0,Math.min(item.durability,item.maxDurability));meter.setAttribute('aria-label','Durabilidade de '+item.name);row.append(meter);}
+          }body.append(row);
+        }
+      } else {
+        if(panel.details?.length)metrics(panel.details);
+        const list=progressNode('ul','progress-limitations');for(const text of panel.limitations||[])list.append(progressNode('li','',text));body.append(list);
+        body.append(progressNode('p','progress-note','Origem: '+panel.reader.name+(panel.source?' • '+panel.source.name:'')));
+      }
+    }
+    function compatibleProgress(game) {
+      if (!game) return null;
+      if (game.progress) return game.progress;
+      const save=game.pokemonSave,pokemon=Boolean(save?.trainer&&Array.isArray(save.party)&&!save.cardType);
+      const metrics=[];if(Number.isInteger(game.playCount))metrics.push({id:'sessions',label:'Inicializações pelo NivoDock',value:game.playCount});
+      if(game.totalPlayMinutes>0)metrics.push({id:'time',label:'Tempo acompanhado pelo NivoDock',value:game.totalPlayMinutes*60,unit:'seconds'});
+      return {schemaVersion:1,pokemon,reader:{id:pokemon?'pokemon-legacy':'library',name:'Biblioteca',extensions:[],canSelectFile:false},support:{tier:pokemon?'detailed':'basic',status:pokemon?'ready':'basic',reason:'Resumo local. Reabra a janela após atualizar o NivoDock para carregar os leitores novos.'},identity:{name:save?.trainer?.name||game.title},metrics,skills:[],equipment:[],objectives:[],limitations:[],source:save?.fullPath&&Number.isFinite(save.mtimeMs)?{name:save.sourceFile,path:save.fullPath,updatedAt:save.mtimeMs}:null,profiles:[],files:[],selection:{mode:'auto'}};
+    }
+    function renderPokemonCard(game) {
+      const card = document.getElementById('pokemon-save-card'), panel = compatibleProgress(game);
+      if (!panel) { card.classList.remove('visible'); progressCardSignature=''; return; }
+      const signature=JSON.stringify([game.id,panel,game.pokemonSave]);if(signature===progressCardSignature){card.classList.add('visible');return;}progressCardSignature=signature;
+      const changedGame=progressCardGame!==game.id;if(changedGame){progressTab='summary';progressCardGame=game.id;}
+      const scroll=document.getElementById('progress-body'),scrollTop=changedGame?0:scroll.scrollTop;
+      const pokemon=Boolean(panel.pokemon&&game.pokemonSave),save=game.pokemonSave;
+      card.classList.add('visible');card.classList.toggle('universal',!pokemon);card.dataset.support=panel.support.tier;card.dataset.reader=panel.reader.id;
+      const avatar=card.querySelector('.trainer-avatar img');avatar.src=pokemon?'https://play.pokemonshowdown.com/sprites/trainers/red-gen3.png':'/brand/icon.svg';avatar.alt=pokemon?'Treinador':'';
+      document.getElementById('pk-trainer-name').textContent=pokemon?`Treinador ${save.trainer.name}`:panel.support.tier==='basic'?'Resumo do jogo':panel.identity.name;
+      const tiers={basic:'Básico',progress:'Progresso',detailed:'Detalhado'};document.getElementById('pk-trainer-id').textContent=pokemon&&save.trainer.tid!==undefined?`ID #${save.trainer.tid}`:tiers[panel.support.tier];
+      document.getElementById('pk-save-meta').textContent=panel.source?`${panel.support.status==='stale'?'Última leitura válida':panel.source.kind==='candidate'?'Arquivo localizado':'Save local'} • ${new Date(panel.source.latestUpdatedAt||panel.source.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:'Registros locais do NivoDock';
+      const source=document.getElementById('progress-source');source.textContent=panel.source?panel.source.name+(panel.source.relatedFiles?.length?' + '+panel.source.relatedFiles.map(f=>f.name).join(', '):''):'Dados de uso registrados por este launcher';source.title=panel.source?.path||'';
+      const feedback=document.getElementById('progress-feedback');feedback.hidden=true;feedback.textContent='';
+      const choose=document.getElementById('btn-choose-progress-save');choose.hidden=!panel.reader.canSelectFile;
+      choose.onclick=async()=>{try{const extensions=(panel.reader.extensions||[]).map(e=>'*'+e).join(';');const response=await fetch('/api/browse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'file',filter:`Saves compatíveis|${extensions}|Todos os arquivos|*.*`})});const selected=await response.json();if(!response.ok)throw new Error(selected.error||'Não foi possível abrir a seleção.');if(selected.path)await selectProgressSave(game,{mode:'file',path:selected.path});}catch(err){feedback.hidden=false;feedback.textContent=err.message;}};
+      const profile=document.getElementById('progress-profile-select');profile.replaceChildren();profile.hidden=pokemon||!panel.reader.canSelectFile||((panel.files?.length||0)<2&&(panel.profiles?.length||0)<2&&(!panel.selection||panel.selection.mode==='auto'));
+      profile.append(new Option('Automático • gravação mais recente','auto'));
+      for(const p of panel.profiles||[])profile.append(new Option(p.label,'profile:'+p.id));
+      const fileGroup=progressNode('optgroup','');fileGroup.label='Arquivos individuais';for(const file of panel.files||[]){const option=new Option((file.profile?file.profile+' • ':'')+file.name,'file:'+file.path);option.disabled=!file.readable;fileGroup.append(option);};if(fileGroup.children.length)profile.append(fileGroup);
+      const selected=panel.selection||{mode:'auto'};profile.value=selected.mode==='profile'?'profile:'+selected.profileId:selected.mode==='file'?'file:'+selected.path:'auto';
+      profile.onchange=()=>{const value=profile.value;if(value==='auto')selectProgressSave(game,{mode:'auto'});else if(value.startsWith('profile:'))selectProgressSave(game,{mode:'profile',profileId:value.slice(8)});else if(value.startsWith('file:'))selectProgressSave(game,{mode:'file',path:value.slice(5)});};
+      const reset=document.getElementById('btn-progress-auto');reset.hidden=!(game.progressSelection||game.savePath&&panel.reader.id.startsWith('pokemon-'));reset.onclick=()=>selectProgressSave(game,{mode:'auto'});
+      const legacySelect=document.getElementById('pk-save-select');legacySelect.replaceChildren();legacySelect.style.display=pokemon&&(save.alternates||[]).length>1?'block':'none';
+      if(pokemon){for(const file of save.alternates||[])legacySelect.append(new Option(`${file.trainerName||'Treinador'} • ${file.sourceFile} (${file.partyCount} na equipe)`,file.fullPath));legacySelect.value=save.fullPath;legacySelect.onchange=async()=>{const response=await fetch('/api/select-save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId:game.id,savePath:legacySelect.value})});if(response.ok){progressCardSignature='';loadData(true,true);}};}
+      const backup=document.getElementById('btn-backup-save');backup.style.display=panel.source&&panel.support.status==='ready'?'inline-flex':'none';backup.title='Cria uma cópia deste arquivo. Um save completo pode precisar de outros arquivos.';
+      backup.onclick=async()=>{backup.disabled=true;try{const response=await fetch('/api/backup-save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId:game.id,savePath:panel.source.path})});const result=await response.json();feedback.hidden=false;feedback.textContent=response.ok?'Cópia deste arquivo criada em backups.':result.error||'Não foi possível copiar o arquivo.';}catch(err){feedback.hidden=false;feedback.textContent=err.message;}finally{backup.disabled=false;}};
+      const sync=document.getElementById('btn-sync-save');sync.style.display=pokemon&&panel.reader.id==='pokemon-za'&&(save.alternates||[]).length>1?'inline-flex':'none';
+      sync.onclick=async()=>{const target=(save.alternates||[]).find(s=>s.fullPath!==save.fullPath);if(!target||!confirm(`Copiar o save atual para ${target.trainerName||'o treinador'} em ${target.sourceFile}? Um backup do destino será criado.`))return;const response=await fetch('/api/sync-save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fromPath:save.fullPath,toPath:target.fullPath})});if(response.ok){progressCardSignature='';loadData(true,true);}};
+      document.getElementById('btn-refresh-save').onclick=()=>{progressCardSignature='';loadData(true,true);};
+      const grid=document.getElementById('pk-party-grid'),body=document.getElementById('progress-game-content');grid.hidden=!pokemon;body.hidden=pokemon;grid.replaceChildren();
+      if(pokemon){for(let i=0;i<6;i++){const mon=save.party[i],slot=progressNode('div',mon?'poke-slot':'poke-slot empty');if(!mon){slot.textContent='Slot vazio';grid.append(slot);continue;}const imageWrap=progressNode('div','poke-sprite-wrap'),image=progressNode('img','');image.alt=mon.nickname;image.src=/^https:\/\//.test(mon.sprite||'')?mon.sprite:'/brand/icon.svg';image.onerror=()=>{image.onerror=null;image.src=/^https:\/\//.test(mon.fallbackSprite||'')?mon.fallbackSprite:'/brand/icon.svg';};imageWrap.append(image);const info=progressNode('div','poke-details');info.append(progressNode('div','poke-name',mon.nickname),progressNode('div','poke-lv',`Nv. ${mon.level} • HP ${mon.curHp}/${mon.maxHp}`));const bar=progressNode('div','hp-bar-bg'),fill=progressNode('div','hp-bar-fill');const percent=mon.maxHp>0?Math.max(0,Math.min(100,mon.curHp/mon.maxHp*100)):0;fill.style.width=percent+'%';fill.style.background=percent>50?'#10b981':percent>20?'#f59e0b':'#ef4444';bar.append(fill);info.append(bar);slot.append(imageWrap,info);grid.append(slot);}}
+      else renderProgressBody(panel,body);
+      scroll.scrollTop=scrollTop;
+    }
+    function renderProgressSupport() {
+      const query=document.getElementById('progress-support-search').value.toLocaleLowerCase('pt-BR'),body=document.getElementById('progress-support-rows');body.replaceChildren();
+      const labels={ready:'Leitura disponível',stale:'Leitura anterior',no_save:'Save não encontrado',unsupported:'Formato ainda não lido',unreadable:'Arquivo inacessível',selection_missing:'Seleção indisponível',basic:'Resumo do launcher'};
+      for(const row of supportRows.filter(r=>r.title.toLocaleLowerCase('pt-BR').includes(query))){const tr=progressNode('tr','');tr.append(progressNode('td','',row.title),progressNode('td','',labels[row.support.status]||row.support.status),progressNode('td','',row.support.status==='ready'?(row.support.fields||[]).join(', '):row.support.reason));body.append(tr);}
+    }
+    function closeProgressSupport(){progressSupportModal.classList.remove('open');document.querySelector('#library-tools summary').focus();}
+    document.getElementById('btn-progress-support').onclick=async()=>{progressSupportModal.classList.add('open');document.getElementById('progress-support-search').focus();try{const response=await fetch('/api/progress/support');const result=await response.json();if(!response.ok)throw new Error(result.error||'Não foi possível consultar os leitores.');supportRows=result.games||[];renderProgressSupport();}catch(err){document.getElementById('progress-support-error').textContent=err.message;}};
+    document.getElementById('close-progress-support').onclick=closeProgressSupport;document.getElementById('progress-support-search').oninput=renderProgressSupport;
+    progressSupportModal.addEventListener('click',event=>{if(event.target===progressSupportModal)closeProgressSupport();});
+    window.addEventListener('keydown',event=>{
+      if(!progressSupportModal.classList.contains('open'))return;
+      if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();closeProgressSupport();}
+      if(event.key==='Tab'){const first=document.getElementById('close-progress-support'),last=document.getElementById('progress-support-search');if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}
+    },true);
+
+
+    function updateHero() {
+      const game = filteredGames[selectedIndex];
+      ['btn-play', 'btn-emulator', 'btn-fav', 'btn-edit-game', 'btn-delete', 'btn-cover-game'].forEach(id => { document.getElementById(id).disabled = !game; });
+      if (!game) {
+        document.getElementById('backdrop').style.backgroundImage = '';
+        document.getElementById('hero-tags').replaceChildren();
+        document.getElementById('hero-platform').textContent = '';
+        document.getElementById('hero-health').textContent = '';
+        document.getElementById('hero-title').textContent = scanState.running ? 'Procurando seus jogos...' : 'Nenhum jogo nesta aba';
+        document.getElementById('hero-subtitle').textContent = currentCategory === 'history' ? 'Nenhuma instalação pendente nesta biblioteca.' : 'Use Gerenciar para verificar instalações ou adicionar uma pasta de jogos. Jogos ausentes ficam no Histórico.';
+        document.getElementById('pokemon-save-card').classList.remove('visible');
+        return;
+      }
+
+      // Keep the interface neutral while each game retains its original artwork.
+      document.getElementById('backdrop').style.backgroundImage = `url(${JSON.stringify(imageUrl(game.hero || game.cover || ''))})`;
+
+      document.getElementById('hero-platform').textContent = game.platform;
+      document.getElementById('hero-title').textContent = game.title;
+      document.getElementById('hero-subtitle').textContent = game.subtitle;
+
+      const healthEl = document.getElementById('hero-health');
+      if (activeSession && activeSession.gameId === game.id) {
+        healthEl.className = 'health-badge';
+        healthEl.textContent = '🟢 Em execução agora';
+        document.getElementById('btn-play-text').textContent = 'JOGANDO...';
+      } else if (game.installation?.status !== 'installed') {
+        healthEl.className = 'health-badge missing';
+        healthEl.textContent = '⚠ ' + (game.installation?.reason || 'Instalação não verificada');
+        document.getElementById('btn-play-text').textContent = 'INDISPONÍVEL';
+        document.getElementById('btn-play').disabled = true;
+      } else if (game.health && !game.health.ready) {
+        healthEl.className = 'health-badge missing';
+        healthEl.textContent = !game.health.emuValid ? '⚠️ Configurar Emulador' : '⚠️ Arquivo ausente';
+        document.getElementById('btn-play-text').textContent = 'JOGAR AGORA';
+      } else {
+        healthEl.className = 'health-badge';
+        healthEl.textContent = '✓ Pronto para jogar';
+        document.getElementById('btn-play-text').textContent = 'JOGAR AGORA';
+      }
+
+      document.getElementById('hero-tags').innerHTML = (game.tags || []).map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('');
+
+      const emuBtn = document.getElementById('btn-emulator');
+      if (game.type === 'emulator') {
+        emuBtn.style.display = 'inline-flex';
+        const emuObj = emulators[game.emulator] || { name: game.emulator };
+        document.getElementById('btn-emulator-label').textContent = `Emulador: ${emuObj.name}`;
+      } else {
+        emuBtn.style.display = 'none';
+      }
+
+      document.getElementById('btn-fav-label').textContent = game.favorite ? '★ Favorito' : '☆ Favoritar';
+      renderPokemonCard(game);
+    }
+
+    async function cycleEmulator() {
+      const game = filteredGames[selectedIndex];
+      if (!game || game.type !== 'emulator') return;
+      const sameCatEmus = Object.values(emulators).filter(e => e.platform === (emulators[game.emulator]?.platform || game.platform)).map(e => e.id);
+      if (sameCatEmus.length <= 1) return;
+      const curIdx = sameCatEmus.indexOf(game.emulator);
+      game.emulator = sameCatEmus[(curIdx + 1) % sameCatEmus.length];
+      playSound('tab');
+      updateHero();
+    }
+
+    async function toggleFavorite() {
+      const game = filteredGames[selectedIndex];
+      if (!game) return;
+      playSound('tab');
+      const res = await fetch('/api/favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: game.id })
+      });
+      const data = await res.json();
+      game.favorite = data.favorite;
+      renderShelf();
+      updateHero();
+    }
+
+    async function triggerLaunch() {
+      if (isLaunching || !filteredGames[selectedIndex] || filteredGames[selectedIndex].installation?.status !== 'installed') return;
+      if (isAnyModalOpen()) return;
+      const game = filteredGames[selectedIndex];
+      isLaunching = true;
+      playSound('launch');
+
+      const overlay = document.getElementById('launch-overlay');
+      document.getElementById('launch-title').textContent = `Iniciando ${game.title}...`;
+      document.getElementById('launch-sub').textContent = 'Abrindo direto em tela cheia...';
+      overlay.classList.add('show');
+
+      try {
+        const res = await fetch('/api/launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: game.id, emulator: game.emulator })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          document.getElementById('launch-title').textContent = '⚠️ Não foi possível iniciar';
+          document.getElementById('launch-sub').textContent = data.error || 'Verifique o caminho em ⚙️ Emuladores';
+        }
+      } catch (e) {
+        document.getElementById('launch-title').textContent = 'Erro de conexão';
+      }
+
+      setTimeout(() => {
+        overlay.classList.remove('show');
+        isLaunching = false;
+        loadData(true);
+      }, 2600);
+    }
+
+    // Refresh all or only the selected game's artwork. Manual choices are kept.
+    let refreshingCovers = false;
+    async function refreshCovers(id) {
+      if (refreshingCovers) return;
+      refreshingCovers = true;
+      const btn = document.getElementById('btn-refresh-covers');
+      const single = document.getElementById('btn-cover-game');
+      btn.disabled = single.disabled = true;
+      btn.textContent = '⏳ Atualizando capas...';
+      try {
+        const res = await fetch('/api/refresh-covers', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(id ? { id } : {})
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Não foi possível atualizar as capas');
+        btn.textContent = `✓ ${data.updated} atualizadas • ${data.failed} pendentes`;
+        await loadData(true);
+        if (data.failures?.length) alert('Capas pendentes (as capas anteriores foram preservadas):\n\n' + data.failures.map(g => `${g.title}: ${g.reason}`).join('\n') + '\n\nVocê pode escolher uma URL em Editar e preservá-la nas próximas atualizações.');
+      } catch (err) { alert(err.message); }
+      finally {
+        refreshingCovers = false;
+        btn.disabled = false;
+        single.disabled = !filteredGames.length;
+        setTimeout(() => { btn.textContent = 'Atualizar capas'; }, 3500);
+      }
+    }
+    document.getElementById('btn-refresh-covers').addEventListener('click', () => refreshCovers());
+    document.getElementById('btn-cover-game').addEventListener('click', () => {
+      const game = filteredGames[selectedIndex];
+      if (game) refreshCovers(game.id);
+    });
+
+    // Delete game
+    document.getElementById('btn-delete').addEventListener('click', async () => {
+      const game = filteredGames[selectedIndex];
+      if (!game) return;
+      if (!confirm(`Remover "${game.title}" da biblioteca? (O arquivo no PC NÃO será apagado)`)) return;
+      await fetch('/api/delete-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: game.id })
+      });
+      loadData(false);
+    });
+
+    // Reconcile physical installations without deleting absent records.
+    document.getElementById('btn-scan').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-scan');
+      btn.disabled = true; btn.textContent = '⏳ Verificando...';
+      try {
+        const res = await fetch('/api/scan', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Não foi possível verificar as instalações');
+        await loadData(true);
+      } catch (err) { alert(err.message); }
+      finally { btn.disabled = false; btn.textContent = 'Verificar instalações'; }
+    });
+
+    // Add / Edit Game Modal
+    const modalAdd = document.getElementById('modal-add');
+    function openGameModal(editGame = null) {
+      const sel = document.getElementById('add-emulator');
+      sel.innerHTML = Object.values(emulators).map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.name)}</option>`).join('');
+
+      if (editGame) {
+        document.getElementById('modal-add-title').textContent = `✏️ Editar: ${editGame.title}`;
+        document.getElementById('edit-game-id').value = editGame.id;
+        document.getElementById('add-type').value = editGame.type;
+        document.getElementById('add-emu-group').style.display = editGame.type === 'emulator' ? 'block' : 'none';
+        if (editGame.emulator) sel.value = editGame.emulator;
+        document.getElementById('add-path').value = editGame.rom || editGame.exe || '';
+        document.getElementById('add-save-path').value = editGame.savePath || '';
+        document.getElementById('add-title').value = editGame.title || '';
+        document.getElementById('add-cover').value = editGame.cover || '';
+        document.getElementById('add-cover-locked').checked = Boolean(editGame.coverLocked);
+      } else {
+        document.getElementById('modal-add-title').textContent = '➕ Adicionar Novo Jogo';
+        document.getElementById('edit-game-id').value = '';
+        document.getElementById('add-type').value = 'pc';
+        document.getElementById('add-emu-group').style.display = 'none';
+        document.getElementById('add-cover-locked').checked = false;
+        document.getElementById('add-path').value = '';
+        document.getElementById('add-save-path').value = '';
+        document.getElementById('add-title').value = '';
+        document.getElementById('add-cover').value = '';
+      }
+      const steam = editGame?.type === 'steam';
+      document.getElementById('add-type').disabled = Boolean(editGame);
+      document.getElementById('add-path').disabled = steam;
+      document.getElementById('btn-browse-game').disabled = steam;
+      modalAdd.classList.add('open');
+    }
+
+    document.getElementById('add-cover').addEventListener('input', e => {
+      document.getElementById('add-cover-locked').checked = Boolean(e.target.value.trim());
+    });
+
+    document.getElementById('btn-open-add').addEventListener('click', () => openGameModal(null));
+    document.getElementById('btn-edit-game').addEventListener('click', () => {
+      const game = filteredGames[selectedIndex];
+      if (game) openGameModal(game);
+    });
+    document.getElementById('close-add').addEventListener('click', () => modalAdd.classList.remove('open'));
+    document.getElementById('cancel-add').addEventListener('click', () => modalAdd.classList.remove('open'));
+
+    document.getElementById('add-type').addEventListener('change', (e) => {
+      const isEmu = e.target.value === 'emulator';
+      document.getElementById('add-emu-group').style.display = isEmu ? 'block' : 'none';
+    });
+
+    document.getElementById('btn-browse-game').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-browse-game');
+      btn.textContent = '⏳ Janela aberta...';
+      const res = await fetch('/api/browse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'file' })
+      });
+      const data = await res.json();
+      btn.textContent = '📂 Procurar...';
+      if (data.path) {
+        document.getElementById('add-path').value = data.path;
+        const titleInput = document.getElementById('add-title');
+        if (!titleInput.value) {
+          const base = data.path.split('\\').pop().replace(/\.[^.]+$/, '');
+          titleInput.value = base.replace(/\[.*?\]|\(.*?\)/g, '').trim();
+        }
+      }
+    });
+
+    document.getElementById('btn-browse-save').addEventListener('click', async () => {
+      const res = await fetch('/api/browse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'file', filter: 'Arquivos de Save (*.sav;*.sgm;*.ss1;*.dsv)|*.sav;*.sgm;*.ss1;*.dsv|Todos (*.*)|*.*' })
+      });
+      const data = await res.json();
+      if (data.path) {
+        document.getElementById('add-save-path').value = data.path;
+      }
+    });
+
+    document.getElementById('confirm-add').addEventListener('click', async () => {
+      const id = document.getElementById('edit-game-id').value || undefined;
+      const type = document.getElementById('add-type').value;
+      const emulator = document.getElementById('add-emulator').value;
+      const targetPath = document.getElementById('add-path').value.trim();
+      const savePath = document.getElementById('add-save-path').value.trim();
+      const title = document.getElementById('add-title').value.trim();
+      const cover = document.getElementById('add-cover').value.trim();
+
+      if ((!targetPath && type !== 'steam') || !title) {
+        alert('Escolha o arquivo do jogo e digite um nome!');
+        return;
+      }
+
+      const btn = document.getElementById('confirm-add');
+      btn.textContent = 'Salvando e buscando capa...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/add-game', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, type, emulator, targetPath, savePath, title, cover,
+            coverLocked: document.getElementById('add-cover-locked').checked })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Não foi possível salvar o jogo');
+        modalAdd.classList.remove('open');
+        await loadData(true);
+      } catch (err) { alert(err.message); }
+      finally { btn.disabled = false; btn.textContent = 'Salvar na Biblioteca'; }
+    });
+
+    // Configure Emulators Modal
+    const modalEmus = document.getElementById('modal-emus');
+    function renderEmusModal() {
+      const rootsEl = document.getElementById('discovery-roots');
+      rootsEl.replaceChildren();
+      for (const location of discoveryRoots) {
+        const row = document.createElement('div'); row.textContent = location + ' ';
+        const remove = document.createElement('button'); remove.className = 'browse-btn'; remove.textContent = 'Remover local';
+        remove.addEventListener('click', async () => {
+          const res = await fetch('/api/discovery-roots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: location, remove: true }) });
+          const data = await res.json(); if (!res.ok) return alert(data.error);
+          discoveryRoots = data.roots; renderEmusModal();
+        });
+        row.appendChild(remove); rootsEl.appendChild(row);
+      }
+      const list = document.getElementById('emus-list');
+      list.innerHTML = '';
+      Object.values(emulators).forEach(emu => {
+        const div = document.createElement('div');
+        div.className = 'emu-card';
+        div.innerHTML = `
+          <div class="emu-card-header">
+            <span>${emu.name}</span>
+            <span style="font-size:0.76rem; color:#a1a1aa;">${emu.platform} • Args: ${(emu.argsTemplate || []).join(' ')}</span>
+          </div>
+          <div class="form-group" style="margin-bottom:8px;">
+            <label>Caminho do Executável (.exe)</label>
+            <div class="input-row">
+              <input type="text" id="exe-${emu.id}" value="${emu.exe || ''}">
+              <button class="browse-btn" data-browse-exe="${emu.id}">📂 .exe</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:4px;">
+            <label>Pastas de ROMs (separadas por ponto-e-vírgula)</label>
+            <div class="input-row">
+              <input type="text" id="romdir-${emu.id}" value="${(emu.romDirs || []).join('; ')}">
+              <button class="browse-btn" data-browse-dir="${emu.id}">📁 Pasta</button>
+              <button class="browse-btn" data-save-emu="${emu.id}" style="border-color:#d4d4d8; color:#e4e4e7;">💾 Salvar</button>
+            </div>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+
+      list.querySelectorAll('[data-browse-exe]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.browseExe;
+          const res = await fetch('/api/browse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'file', filter: 'Executável (*.exe)|*.exe' })
+          });
+          const data = await res.json();
+          if (data.path) document.getElementById(`exe-${id}`).value = data.path;
+        });
+      });
+
+      list.querySelectorAll('[data-browse-dir]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.browseDir;
+          const res = await fetch('/api/browse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'folder' })
+          });
+          const data = await res.json();
+          if (data.path) {
+            const cur = document.getElementById(`romdir-${id}`).value.trim();
+            document.getElementById(`romdir-${id}`).value = cur ? `${cur}; ${data.path}` : data.path;
+          }
+        });
+      });
+
+      list.querySelectorAll('[data-save-emu]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.saveEmu;
+          const emu = emulators[id];
+          const newExe = document.getElementById(`exe-${id}`).value.trim();
+          const newDirs = document.getElementById(`romdir-${id}`).value;
+          await fetch('/api/save-emulator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({}, emu, { exe: newExe, romDirs: newDirs }))
+          });
+          btn.textContent = '✓ Salvo!';
+          setTimeout(() => { btn.textContent = '💾 Salvar'; }, 1500);
+          loadData(true);
+        });
+      });
+    }
+
+    document.getElementById('btn-browse-new-emu').addEventListener('click', async () => {
+      const res = await fetch('/api/browse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'file', filter: 'Executável (*.exe)|*.exe' })
+      });
+      const data = await res.json();
+      if (data.path) document.getElementById('new-emu-exe').value = data.path;
+    });
+
+    document.getElementById('btn-add-new-emu').addEventListener('click', async () => {
+      const name = document.getElementById('new-emu-name').value.trim();
+      const platform = document.getElementById('new-emu-plat').value.trim() || name;
+      const category = document.getElementById('new-emu-cat').value;
+      const exe = document.getElementById('new-emu-exe').value.trim();
+      const argsTemplate = document.getElementById('new-emu-args').value.trim();
+      const romDirs = document.getElementById('new-emu-romdir').value.trim();
+      if (!name || !exe) {
+        alert('Informe o nome e o executável do emulador!');
+        return;
+      }
+      const res = await fetch('/api/save-emulator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, platform, category, exe, argsTemplate, romDirs })
+      });
+      const data = await res.json();
+      emulators = data.emulators || emulators;
+      renderEmusModal();
+      loadData(true);
+    });
+
+    document.getElementById('btn-add-location').addEventListener('click', async () => {
+      const picked = await fetch('/api/browse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'folder' }) }).then(r => r.json());
+      if (!picked.path) return;
+      const res = await fetch('/api/discovery-roots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: picked.path }) });
+      const data = await res.json(); if (!res.ok) return alert(data.error);
+      discoveryRoots = data.roots; renderEmusModal();
+    });
+
+    document.getElementById('btn-open-emus').addEventListener('click', () => {
+      renderEmusModal();
+      modalEmus.classList.add('open');
+    });
+    document.getElementById('close-emus').addEventListener('click', () => modalEmus.classList.remove('open'));
+    document.getElementById('close-emus-done').addEventListener('click', () => modalEmus.classList.remove('open'));
+
+    function isAnyModalOpen() {
+      return modalAdd.classList.contains('open') || modalEmus.classList.contains('open') || window.NivoDockUpdates.isOpen() || progressSupportModal.classList.contains('open');
+    }
+
+    document.getElementById('btn-play').addEventListener('click', triggerLaunch);
+    document.getElementById('btn-emulator').addEventListener('click', cycleEmulator);
+    document.getElementById('btn-fav').addEventListener('click', toggleFavorite);
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        playSound('tab');
+        filterGames(tab.dataset.cat);
+      });
+    });
+
+    const libraryTools = document.getElementById('library-tools');
+    libraryTools.addEventListener('click', e => {
+      if (e.target.closest('button')) libraryTools.open = false;
+    });
+    document.addEventListener('click', e => {
+      if (!libraryTools.contains(e.target)) libraryTools.open = false;
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (libraryTools.open && e.key === 'Escape') {
+        libraryTools.open = false;
+        libraryTools.querySelector('summary').focus();
+        return;
+      }
+      if (isLaunching || isAnyModalOpen()) {
+        if (e.key === 'Escape') {
+          modalAdd.classList.remove('open');
+          modalEmus.classList.remove('open');
+          if(progressSupportModal.classList.contains('open')) closeProgressSupport();
+        }
+        return;
+      }
+      if (e.target.closest('input, textarea, select, [contenteditable="true"], button, a, summary')) return;
+      if (['ArrowRight', 'ArrowLeft', 'Enter', ' '].includes(e.key)) e.preventDefault();
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') selectGame(selectedIndex + 1);
+      else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') selectGame(selectedIndex - 1);
+      else if (e.key === 'Enter') triggerLaunch();
+      else if (e.key === ' ') { e.preventDefault(); cycleEmulator(); }
+      else if (e.key === 'f' || e.key === 'F') toggleFavorite();
+      else if (e.key === 'e' || e.key === 'E') {
+        playSound('tab');
+        filterGames(categories[(categories.indexOf(currentCategory) + 1) % categories.length]);
+      } else if (e.key === 'q' || e.key === 'Q') {
+        playSound('tab');
+        filterGames(categories[(categories.indexOf(currentCategory) - 1 + categories.length) % categories.length]);
+      }
+    });
+
+    let lastGamepadAction = 0;
+    let prevButtons = {};
+
+    function updateControllerPill(gp) {
+      const pill = document.getElementById('controller-status');
+      const text = document.getElementById('controller-text');
+      if (gp) {
+        pill.classList.add('connected');
+        text.textContent = gp.id.split('(')[0].trim() || 'Controle Ativo';
+      } else {
+        pill.classList.remove('connected');
+        text.textContent = 'Controle desconectado';
+      }
+    }
+
+    window.addEventListener('gamepadconnected', (e) => {
+      updateControllerPill(e.gamepad);
+      playSound('tab');
+    });
+    window.addEventListener('gamepaddisconnected', () => updateControllerPill(null));
+
+    function pollGamepad() {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const gp = Array.from(gamepads).find(g => g && g.connected);
+
+      if (gp && !isAnyModalOpen() && !libraryTools.open && !document.activeElement?.closest('#pokemon-save-card')) {
+        updateControllerPill(gp);
+        const now = performance.now();
+        const axisX = gp.axes[0] || 0;
+        const dpadLeft = gp.buttons[14]?.pressed;
+        const dpadRight = gp.buttons[15]?.pressed;
+
+        if (now - lastGamepadAction > 190) {
+          if (axisX > 0.55 || dpadRight) {
+            selectGame(selectedIndex + 1);
+            lastGamepadAction = now;
+          } else if (axisX < -0.55 || dpadLeft) {
+            selectGame(selectedIndex - 1);
+            lastGamepadAction = now;
+          }
+        }
+
+        const btnPressed = (idx) => gp.buttons[idx]?.pressed && !prevButtons[idx];
+        if (btnPressed(0)) triggerLaunch();
+        if (btnPressed(2)) cycleEmulator();
+        if (btnPressed(3)) toggleFavorite();
+        if (btnPressed(4)) {
+          playSound('tab');
+          filterGames(categories[(categories.indexOf(currentCategory) - 1 + categories.length) % categories.length]);
+        }
+        if (btnPressed(5)) {
+          playSound('tab');
+          filterGames(categories[(categories.indexOf(currentCategory) + 1) % categories.length]);
+        }
+
+        gp.buttons.forEach((b, i) => { prevButtons[i] = b.pressed; });
+      }
+      requestAnimationFrame(pollGamepad);
+    }
+
+    async function checkLiveStatusAndSaves() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        scanState = data.scanStatus || {};
+        window.NivoDockUpdates.render(data.update);
+        renderDiscoveryStatus();
+        const libraryChanged = Boolean(data.libraryRevision && data.libraryRevision !== lastLibraryRevision);
+        const sessionChanged = Boolean(activeSession) !== Boolean(data.activeSession);
+        const saveChanged = Boolean(data.saveSignature && lastSaveSignature && data.saveSignature !== lastSaveSignature);
+        if (sessionChanged || saveChanged || libraryChanged) {
+          activeSession = data.activeSession;
+          if (data.saveSignature) lastSaveSignature = data.saveSignature;
+          loadData(true, saveChanged);
+        } else if (data.saveSignature && !lastSaveSignature) {
+          lastSaveSignature = data.saveSignature;
+        }
+      } catch {}
+    }
+
+    setInterval(checkLiveStatusAndSaves, 2000);
+    window.addEventListener('focus', () => checkLiveStatusAndSaves());
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) checkLiveStatusAndSaves();
+    });
+
+    loadData();
+    requestAnimationFrame(pollGamepad);
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+const { test, mock } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+test('scan API removes ghosts from installed counts and preserves reinstall history', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'banzak-reconcile-api-'));
+  for (const name of ['server.js','library.js','artwork.js','environment.js','discovery.js','game-manifests.js','update-core.js','update-worker.js','updater.js','update-channel.json','save-locations.js','progress.js','progress-readers.js','progress-formats.js', 'autostart.js','package.json']) fs.copyFileSync(path.join(__dirname, '..', name), path.join(dir, name));
+  fs.mkdirSync(path.join(dir, 'public'));
+  const user = path.join(dir, 'AnotherUser');
+  const context = { userProfile: user, appData: path.join(user, 'Roaming'), localAppData: path.join(user, 'Local'), programData: path.join(dir, 'Data'), programFiles: path.join(dir, 'Programs'), programFilesX86: path.join(dir, 'Programs32'), gameRoots: [], steamRoots: [], applications: [], drives: [] };
+  const launcher = path.join(context.programFilesX86, 'Battle.net', 'Battle.net.exe');
+  fs.mkdirSync(path.dirname(launcher), { recursive: true }); fs.writeFileSync(launcher, 'MZ');
+  const exe = path.join(dir, 'Installed', 'Game.exe'); fs.mkdirSync(path.dirname(exe)); fs.writeFileSync(exe, 'MZ');
+  const old = [{ id: 'manual', title: 'My Game', type: 'pc', exe, favorite: true, playCount: 7, lastPlayed: 123, totalPlayMinutes: 90, coverLocked: true, savePath: 'custom-save' },
+    ...['bnet-diablo4','bnet-diablo3','bnet-ow2'].map(id => ({ id, title: id, store: 'battlenet', type: 'pc', exe: launcher, favorite: true, playCount: 4 }))];
+  fs.writeFileSync(path.join(dir, 'games.json'), JSON.stringify(old));
+  fs.writeFileSync(path.join(dir, 'config.json'), '{"emulators":{},"customPreference":"keep"}');
+  mock.method(require(path.join(dir, 'environment')), 'createEnvironment', async () => context);
+  process.env.NIVODOCK_PORT = '47914';
+  const { server } = require(path.join(dir, 'server'));
+  await new Promise(resolve => server.listen(47914, '127.0.0.1', resolve));
+  t.after(async () => { await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); });
+  const base = 'http://127.0.0.1:47914';
+  const post = (route, body = {}) => fetch(base + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const scan = async () => { const res = await post('/api/scan'); assert.equal(res.status, 200); return res.json(); };
+  assert.equal((await scan()).installed, 1);
+  let data = await fetch(base + '/api/data').then(r => r.json());
+  assert.deepEqual(data.counts, { installed: 1, unavailable: 3 });
+  assert.ok(data.games.filter(g => g.id.startsWith('bnet')).every(g => !g.health.ready && g.installation.status === 'missing'));
+  assert.ok(data.games.filter(g => g.id.startsWith('bnet')).every(g => g.pokemonSave === null && g.progress.support.tier === 'basic' && g.progress.source === null));
+  const rejected = await post('/api/launch', { id: 'bnet-diablo4' });
+  assert.equal(rejected.status, 400);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'games.json'))).find(g => g.id === 'bnet-diablo4').playCount, 4);
+  fs.unlinkSync(exe); assert.equal((await scan()).installed, 0);
+  fs.writeFileSync(exe, 'MZ'); assert.equal((await scan()).installed, 1);
+  data = await fetch(base + '/api/data').then(r => r.json());
+  const game = data.games.find(g => g.id === 'manual');
+  for (const key of ['favorite','playCount','lastPlayed','totalPlayMinutes','savePath']) assert.equal(game[key], old[0][key]);
+  assert.equal(data.games.length, 4);
+  const savedRoot = await post('/api/discovery-roots', { path: path.dirname(exe) }); assert.equal(savedRoot.status, 200);
+  const config = JSON.parse(fs.readFileSync(path.join(dir, 'config.json')));
+  assert.equal(config.customPreference, 'keep'); assert.deepEqual(config.discoveryRoots, [path.dirname(exe)]);
+});

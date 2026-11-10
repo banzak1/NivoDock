@@ -1,0 +1,27 @@
+.deck-profile/
+node_modules/
+*.log
+*.bak
+.DS_Store
+Thumbs.db
+
+# User library, settings, artwork cache, and save backups
+/games.json
+/config.json
+public/artwork/
+backups/
+
+# Standalone distribution artifacts
+dist/
+node.exe
+/NivoDock.exe
+/Instalar-NivoDock.exe
+*.release-tmp
+
+# License accompanying the generated bundled runtime
+/NODE-LICENSE.txt
+
+# Update transactions and signing keys (private keys belong outside the project)
+.updates/
+*.pem
+*.key

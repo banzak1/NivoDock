@@ -1,0 +1,15 @@
+{
+  "name": "nivodock",
+  "version": "2.0.0",
+  "description": "Standalone Universal Console-Style Game Launcher, Multi-Store Scanner (Steam, Epic, Battle.net, Riot, EA) & Real-Time Save Inspector (GBA, NDS, Switch, Switch 2, PC Ports)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "author": "Banzak",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  }
+}
